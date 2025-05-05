@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Selector de Preguntas CSV</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 900px;
+      margin: auto;
+    }
+    .file-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .file-list label {
+      background: #f0f0f0;
+      padding: 6px 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      cursor: pointer;
+    }
+    .file-list input[type="checkbox"] {
+      margin-right: 6px;
+    }
+    .question-block {
+      background: #fafafa;
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      transition: background-color 0.3s;
+    }
+    .question-block.correct {
+      background-color: #e1f5e1;
+    }
+    .question-block.incorrect {
+      background-color: #fde4e4;
+    }
+    .question-block strong {
+      display: block;
+      margin-bottom: 10px;
+    }
+    .question-block label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    .correct {
+      color: green;
+      font-weight: bold;
+    }
+    .incorrect {
+      color: red;
+      font-weight: bold;
+    }
+    #resultContainer {
+      margin-top: 30px;
+    }
+    #downloadHistory {
+      margin-top: 20px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Selecciona archivos CSV con preguntas</h1>
+  <form id="fileForm">
+    <div class="file-list" id="fileList"></div>
+    <div id="questionCountContainer" style="display: none;">
+      <label for="questionCount">¿Cuántas preguntas en total quieres mostrar?</label>
+      <input type="number" id="questionCount" name="questionCount" min="1" value="10">
+    </div>
+    <button type="submit">Cargar preguntas</button>
+  </form>
+
+  <div id="questionsContainer"></div>
+  <div id="resultContainer"></div>
+  <a id="downloadHistory" href="#" download="historial_respuestas.csv">Descargar historial</a>
+
+  <script>
+    const fileListDiv = document.getElementById('fileList');
+    const questionCountContainer = document.getElementById('questionCountContainer');
+    const questionCountInput = document.getElementById('questionCount');
+    let historialCSV = 'Fecha;Pregunta;Seleccionada;Correcta;Resultado\n';
+
+    async function cargarListaCSV() {
+      const response = await fetch('lista.txt');
+      const text = await response.text();
+      const csvFiles = text.trim().split(/\r?\n/).filter(line => line.trim().endsWith('.csv'));
+      csvFiles.forEach(filename => {
+        const label = document.createElement('label');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.name = 'csvFiles';
+        checkbox.value = filename.trim();
+        checkbox.addEventListener('change', () => {
+          const checked = document.querySelectorAll('input[name="csvFiles"]:checked').length;
+          questionCountContainer.style.display = checked > 1 ? 'block' : 'none';
+        });
+        label.appendChild(checkbox);
+        label.appendChild(document.createTextNode(' ' + filename));
+        fileListDiv.appendChild(label);
+      });
+    }
+
+    cargarListaCSV();
+
+    document.getElementById('fileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const selected = Array.from(document.querySelectorAll('input[name="csvFiles"]:checked')).map(el => el.value);
+      const questionCount = parseInt(questionCountInput.value);
+      if (selected.length === 0) {
+        alert('Selecciona al menos un archivo CSV');
+        return;
+      }
+
+      const preguntasPorArchivo = [];
+
+      for (const file of selected) {
+        const res = await fetch(file);
+        const text = await res.text();
+        const lineas = text.trim().split('\n').slice(1);
+        lineas.forEach(l => {
+          const partes = l.split(';');
+          partes.push(file);
+          preguntasPorArchivo.push(partes);
+        });
+      }
+
+      let seleccionadas = [];
+
+      if (selected.length === 1) {
+        seleccionadas = preguntasPorArchivo;
+      } else {
+        const total = questionCount;
+        const base = Math.floor(total / selected.length);
+        let restantes = total % selected.length;
+
+        const porFichero = {};
+        selected.forEach(file => {
+          porFichero[file] = preguntasPorArchivo.filter(p => p[6] === file);
+        });
+
+        for (const file of selected) {
+          let cuantas = base + (restantes > 0 ? 1 : 0);
+          if (restantes > 0) restantes--;
+          seleccionadas.push(...porFichero[file].sort(() => Math.random() - 0.5).slice(0, cuantas));
+        }
+      }
+
+      seleccionadas = seleccionadas.sort(() => Math.random() - 0.5);
+      mostrarPreguntas(seleccionadas);
+    });
+
+    function mostrarPreguntas(preguntas) {
+      const container = document.getElementById('questionsContainer');
+      const resultContainer = document.getElementById('resultContainer');
+      container.innerHTML = '';
+      resultContainer.innerHTML = '';
+      historialCSV = 'Fecha;Pregunta;Seleccionada;Correcta;Resultado\n';
+
+      preguntas.forEach((p, i) => {
+        if (p.length < 7) return;
+        const [pregunta, o1, o2, o3, o4, correcta, origen] = p;
+        const opciones = [o1, o2, o3, o4];
+        const correctasIndices = correcta.split(',').map(n => n.trim());
+        const correctasTexto = correctasIndices.map(idx => opciones[parseInt(idx) - 1]);
+
+        const div = document.createElement('div');
+        div.classList.add('question-block');
+        div.dataset.correctasIndices = correctasIndices.join(',');
+        div.dataset.correctasTexto = correctasTexto.join(', ');
+        div.dataset.pregunta = pregunta;
+
+        div.innerHTML = `<strong>${i + 1}. ${pregunta} <em>(${origen})</em></strong>`;
+
+        const tipo = correctasIndices.length > 1 ? 'checkbox' : 'radio';
+
+        opciones.forEach((opcion, j) => {
+          const label = document.createElement('label');
+          label.innerHTML = `<input type="${tipo}" name="q${i}" value="${j + 1}" data-text="${opcion}"> ${opcion}`;
+          div.appendChild(label);
+        });
+
+        container.appendChild(div);
+      });
+
+      const corregirBtn = document.createElement('button');
+      corregirBtn.textContent = 'Corregir';
+      corregirBtn.addEventListener('click', () => corregir(preguntas));
+      resultContainer.appendChild(corregirBtn);
+    }
+
+    function corregir(preguntas) {
+      let aciertos = 0;
+      const fecha = new Date().toLocaleString();
+
+      preguntas.forEach((p, i) => {
+        const bloque = document.querySelector(`.question-block:nth-child(${i + 1})`);
+        const correctasIndices = bloque.dataset.correctasIndices.split(',');
+        const correctasTexto = bloque.dataset.correctasTexto;
+        const preguntaTexto = bloque.dataset.pregunta;
+
+        const inputs = bloque.querySelectorAll('input');
+        let seleccionadas = [];
+        let seleccionadasTexto = [];
+
+        inputs.forEach(input => {
+          input.disabled = true;
+          if (input.checked) {
+            seleccionadas.push(input.value);
+            seleccionadasTexto.push(input.dataset.text);
+          }
+          if (correctasIndices.includes(input.value)) input.parentElement.classList.add('correct');
+          if (input.checked && !correctasIndices.includes(input.value)) input.parentElement.classList.add('incorrect');
+        });
+/*
+        const esCorrecto = 
+          seleccionadas.length === correctasIndices.length &&
+          correctasIndices.every(v => seleccionadas.includes(v));
+
+        const resultado = esCorrecto ? 'OK' : 'KO';
+        if (esCorrecto) aciertos++;
+*/
+        const esCorrecto = 
+          seleccionadas.length === correctasIndices.length &&
+          correctasIndices.every(v => seleccionadas.includes(v));
+
+        if (esCorrecto) {
+          bloque.classList.add('correct');
+          aciertos++;
+        } else {
+          bloque.classList.add('incorrect');
+        }
+        const resultado = esCorrecto ? 'OK' : 'KO';
+
+
+
+        historialCSV += `"${fecha}";"${preguntaTexto}";"${seleccionadasTexto.join(', ')}";"${correctasTexto}";${resultado}\n`;
+      });
+
+      const total = preguntas.length;
+      const puntuacion = (aciertos / total * 10).toFixed(1);
+      const resultText = document.createElement('p');
+      resultText.innerHTML = `<strong>Puntuación: ${puntuacion}/10</strong> (${aciertos} de ${total} correctas)`;
+      document.getElementById('resultContainer').appendChild(resultText);
+
+      const blob = new Blob([historialCSV], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const downloadLink = document.getElementById('downloadHistory');
+      downloadLink.href = url;
+      downloadLink.style.display = 'inline-block';
+    }
+  </script>
+</body>
+</html>

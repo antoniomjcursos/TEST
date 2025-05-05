@@ -1,0 +1,9 @@
+﻿pregutnas_tema1.csv
+pregutnas_tema2.csv
+pregutnas_tema3.csv
+pregutnas_tema4.csv
+pregutnas_tema5.csv
+pregutnas_tema6.csv
+pregutnas_tema7.csv
+pregutnas_tema8.csv
+pretunas_repaso.csv

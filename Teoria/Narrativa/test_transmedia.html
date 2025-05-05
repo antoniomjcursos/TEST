@@ -1,0 +1,133 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Test Narrativa Digital</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2em; background: #f8f9fa; color: #333; }
+    .question { margin-bottom: 2em; padding: 1em; border: 1px solid #ccc; background: #fff; border-radius: 8px; }
+    .question h3 { margin-top: 0; }
+    .options label { display: block; margin: 0.5em 0; cursor: pointer; }
+    .correct { color: green; font-weight: bold; }
+    .incorrect { color: red; font-weight: bold; }
+    .btn { background-color: #007bff; color: white; padding: 0.5em 1em; border: none; border-radius: 4px; cursor: pointer; }
+    .btn:hover { background-color: #0056b3; }
+    #result { margin-top: 2em; }
+  </style>
+</head>
+<body>
+  <h1>Test Narrativa Digital</h1>
+  <div id="quiz"></div>
+  <button class="btn" onclick="submitAnswers()">Enviar respuestas</button>
+  <div id="result"></div>
+
+  <script>
+    const temas = [1,2,3,4,5,6,7];
+    const preguntasPorTema = 3;
+    let preguntasTotales = [];
+
+    async function cargarCSV(url) {
+      const res = await fetch(url);
+      const texto = await res.text();
+      return texto.trim().split('\n').map(linea => {
+        const [pregunta, ...resto] = linea.split(';');
+        const opciones = resto.slice(0,4);
+        const correcta = parseInt(resto[4]);
+        return { pregunta, opciones, correcta };
+      });
+    }
+
+    function mezclar(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    async function iniciar() {
+      for (let tema of temas) {
+        const datos = await cargarCSV(`preguntas_tema_${tema}.csv`);
+        const seleccionadas = mezclar(datos).slice(0, preguntasPorTema);
+        preguntasTotales = preguntasTotales.concat(seleccionadas);
+      }
+      preguntasTotales = mezclar(preguntasTotales).slice(0, 20);
+      mostrarPreguntas();
+    }
+
+    function mostrarPreguntas() {
+      const quiz = document.getElementById('quiz');
+      preguntasTotales.forEach((p, i) => {
+        const opcionesMezcladas = p.opciones.map((texto, idx) => ({texto, idx: idx + 1}));
+        const mezcladas = mezclar(opcionesMezcladas);
+        const opcionesHTML = mezcladas.map(opt =>
+          `<label><input type="radio" name="q${i}" value="${opt.idx}" /> ${opt.texto}</label>`
+        ).join('');
+        quiz.innerHTML += `
+          <div class="question" id="q${i}">
+            <h3>Pregunta ${i+1}: ${p.pregunta}</h3>
+            <div class="options">${opcionesHTML}</div>
+          </div>
+        `;
+      });
+    }
+
+    function submitAnswers() {
+      let correctas = 0;
+      let resumen = "Pregunta;Seleccionada;Correcta\n";
+
+      preguntasTotales.forEach((p, i) => {
+        const opciones = document.getElementsByName(`q${i}`);
+        let seleccionada = null;
+        for (let op of opciones) {
+          if (op.checked) {
+            seleccionada = parseInt(op.value);
+            break;
+          }
+        }
+
+        const div = document.getElementById(`q${i}`);
+        const labels = div.querySelectorAll("label");
+        labels.forEach((label, idx) => {
+          const val = parseInt(label.querySelector("input").value);
+          if (val === p.correcta) {
+            label.classList.add("correct");
+          }
+          if (val === seleccionada && val !== p.correcta) {
+            label.classList.add("incorrect");
+          }
+        });
+
+        const textoSeleccionada = seleccionada ? p.opciones[seleccionada - 1] : "No respondida";
+        const textoCorrecta = p.opciones[p.correcta - 1];
+        resumen += `"${p.pregunta}";"${textoSeleccionada}";"${textoCorrecta}"\n`;
+
+        if (seleccionada === p.correcta) {
+          correctas++;
+        }
+      });
+
+      const nota = (correctas * 0.5).toFixed(2);
+      document.getElementById('result').innerHTML = `
+        <h2>Resultados</h2>
+        <p>Has acertado ${correctas} de 20 preguntas.</p>
+        <p><strong>Nota final:</strong> ${nota} / 10</p>
+      `;
+
+      guardarResumen(resumen);
+    }
+
+    function guardarResumen(contenido) {
+      const blob = new Blob([contenido], {type: "text/csv;charset=utf-8"});
+      const fecha = new Date().toISOString().replace(/[:.]/g, "-");
+      const enlace = document.createElement("a");
+      enlace.href = URL.createObjectURL(blob);
+      enlace.download = `resumen_test_${fecha}.csv`;
+      enlace.click();
+    }
+
+    iniciar();
+  </script>
+</body>
+</html>

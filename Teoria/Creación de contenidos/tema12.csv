@@ -1,0 +1,11 @@
+pregunta;opcion1;opcion2;opcion3;opcion4;correcta
+¿Cuáles de las siguientes aplicaciones se consideran plataformas comerciales de aprendizaje?;Dokeos, Canvas LMS y Chamilo.;Blackboard, Dokeos y Canvas LMS.;Blackboard, First Class y Sakai.;Blackboard, First Class y E-college.;4
+¿Cuál es el concepto clave de una plataforma EVA?;Un sistema de gestión del aprendizaje.;Un espacio de trabajo para el desarrollo del aprendizaje.;Un aula sin paredes.;Un sistema de gestión de contenidos.;3
+¿Cuál de estas plataformas LMS se aloja y desarrolla en la nube?;Moodle;Dokeos.;Canvas LMS;Wordpress;3
+¿Qué es un módulo?;Un grupo de usuarios del curso.;Un contenedor, bloque o sección de la plataforma.;Un espacio de trabajo del docente.;Una sección de recursos multimedia.;2
+¿Dónde puede ser instalada Moodle?;En un servidor dedicado.;En cualquier servidor.;No requiere servidor.;En la nube.;2
+¿En qué formatos trabaja Moodle?;Permite únicamente formatos de audio, video e imagen;Permite formatos Word, pdf, ppt, vídeo e imagen;Permite formatos Word, pdf, ppt, vídeo, audio, imagen, archivos SCORM, etc.;Ninguna de las anteriores es correcta.;3
+A través de la función “añadir actividad o recurso” ¿Es posible incorporar un vídeo directamente si tenemos la URL?;Si la manera más directa es pinchar sobre etiqueta.;La manera más directa es pinchar en URL.;Pinchando en archivo.;Pinchando en página.;2
+¿En qué formato se cargan normalmente los paquetes SCORM?;En pdf.;En formato interactivo.;En .zip.;En cualquier formato.;3
+¿A qué hacemos referencia cuando mencionamos las Hotpotatoes?;Un módulo para crear preguntas interactivas.;Juegos didácticos.;Contenidos multimedia (vídeos, audios, imágenes).;Un plugin que puede ser integrado en Moodle.;1
+¿En qué consiste Educaplay?;Se trata de un módulo que integra Moodle.;Se trata de una plataforma externa que permite crear contenidos multimedia a integrar en un EVA.;Se trata de una plataforma externa que permite crear actividades interactivas para integrarlas en un EVA.;Un plugin que puede ser instalado en cualquier entorno virtual de aprendizaje para realizar juegos interactivos.;3

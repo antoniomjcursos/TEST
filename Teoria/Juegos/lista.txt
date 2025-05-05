@@ -1,0 +1,17 @@
+﻿preguntas_completas.csv
+preguntas_gbl.csv
+preguntas_juego.csv
+preguntas_opcion_multiple.csv
+preguntas_tema1.csv
+preguntas_tema2.csv
+preguntas_tema3.csv
+preguntas_tema4.2.csv
+preguntas_tema4.csv
+preguntas_tema5.1.csv
+preguntas_tema5.csv
+preguntas_tema6.1.csv
+preguntas_tema6.csv
+preguntas_tema7.1.csv
+preguntas_tema7.csv
+preguntas_tema8.1.csv
+preguntas_tema8.csv

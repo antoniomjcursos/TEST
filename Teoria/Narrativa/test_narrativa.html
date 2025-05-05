@@ -1,0 +1,149 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Test de Narrativa</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2em;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+        }
+        .question-container {
+            background-color: #fff;
+            padding: 1em;
+            margin-bottom: 1em;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .question {
+            font-weight: bold;
+        }
+        .options label {
+            display: block;
+            margin-bottom: 0.5em;
+        }
+        button {
+            padding: 0.5em 1em;
+            font-size: 1em;
+            margin-top: 1em;
+        }
+        #result {
+            margin-top: 2em;
+            padding: 1em;
+            background-color: #e0ffe0;
+            border: 1px solid #00aa00;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test de Narrativa Digital</h1>
+    <form id="quizForm"></form>
+    <button onclick="submitQuiz()">Enviar</button>
+    <div id="result"></div>
+
+    <script>
+        const topics = [
+            'preguntas_tema_1.csv',
+            'preguntas_tema_2.csv',
+            'preguntas_tema_3.csv',
+            'preguntas_tema_4.csv',
+            'preguntas_tema_5.csv',
+            'preguntas_tema_6.csv',
+            'preguntas_tema_7.csv'
+        ];
+
+        const questionsPerTopic = 3;
+        let allQuestions = [];
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        async function loadCSV(file) {
+            const response = await fetch(file);
+            const text = await response.text();
+            return text.split('\n').map(row => row.split(';'));
+        }
+
+        function renderQuestions(questions) {
+            const form = document.getElementById('quizForm');
+            questions.forEach((q, index) => {
+                const [question, ...options] = q;
+                const correct = options.pop();
+                const div = document.createElement('div');
+                div.className = 'question-container';
+                div.innerHTML = `<div class="question">${index + 1}. ${question}</div>`;
+                const opts = options.map((opt, i) => 
+                    `<label><input type="radio" name="q${index}" value="${i+1}"> ${opt}</label>`).join('');
+                div.innerHTML += `<div class="options">${opts}</div>`;
+                div.setAttribute('data-correct', correct);
+                form.appendChild(div);
+            });
+        }
+
+        async function loadAllQuestions() {
+            for (const topic of topics) {
+                const data = await loadCSV(topic);
+                shuffle(data);
+                allQuestions.push(...data.slice(0, questionsPerTopic));
+            }
+            shuffle(allQuestions);
+            renderQuestions(allQuestions);
+        }
+
+        function submitQuiz() {
+            const containers = document.querySelectorAll('.question-container');
+            let correctCount = 0;
+            let history = "Pregunta;Opción elegida;Respuesta correcta\n";
+
+            containers.forEach((container, index) => {
+                const correct = container.getAttribute('data-correct');
+                const selected = container.querySelector('input[type="radio"]:checked');
+                const opts = container.querySelectorAll('input[type="radio"]');
+                let selectedVal = "Sin respuesta";
+
+                if (selected) {
+                    selectedVal = selected.value;
+                    if (selectedVal === correct) {
+                        correctCount++;
+                        container.style.backgroundColor = "#e0ffe0";
+                    } else {
+                        container.style.backgroundColor = "#ffe0e0";
+                    }
+                } else {
+                    container.style.backgroundColor = "#ffffcc";
+                }
+
+                const questionText = container.querySelector('.question').innerText.replace(/\n/g, '').trim();
+                const correctOption = opts[correct - 1]?.nextSibling.textContent.trim() || "Desconocido";
+                const chosenOption = selected ? selected.nextSibling.textContent.trim() : "Sin respuesta";
+                history += `${questionText};${chosenOption};${correctOption}\n`;
+            });
+
+            const totalScore = correctCount * 0.5;
+            document.getElementById('result').innerHTML = `Has acertado ${correctCount} de ${containers.length} preguntas.<br>Puntuación final: ${totalScore.toFixed(1)} / 10`;
+
+            const blob = new Blob([history], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            link.setAttribute("href", URL.createObjectURL(blob));
+            link.setAttribute("download", `historial_test_${timestamp}.csv`);
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        loadAllQuestions();
+    </script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Test por Temas</title>
+  <style>
+    body { font-family: Arial; max-width: 800px; margin: auto; padding: 20px; }
+    .correct { color: green; font-weight: bold; }
+    .incorrect { color: red; font-weight: bold; }
+    .question-container { margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+  <h1>Selecciona el tipo de test</h1>
+  <select id="temaSeleccionado">
+    <option value="todos">Preguntas aleatorias de todos los temas</option>
+    <option value="tema_1">Solo Tema 1</option>
+    <option value="tema_2">Solo Tema 2</option>
+    <option value="tema_3">Solo Tema 3</option>
+    <option value="tema_4">Solo Tema 4</option>
+    <option value="tema_5">Solo Tema 5</option>
+    <option value="tema_6">Solo Tema 6</option>
+    <option value="tema_7">Solo Tema 7</option>
+  </select>
+  <button onclick="startQuiz()">Comenzar</button>
+
+  <div id="quiz"></div>
+  <div id="result"></div>
+
+  <script>
+    const temas = {
+      tema_1: "preguntas_tema_1.csv",
+      tema_2: "preguntas_tema_2.csv",
+      tema_3: "preguntas_tema_3.csv",
+      tema_4: "preguntas_tema_4.csv",
+      tema_5: "preguntas_tema_5.csv",
+      tema_6: "preguntas_tema_6.csv",
+      tema_7: "preguntas_tema_7.csv"
+    };
+
+    async function loadCSV(file) {
+      const response = await fetch(file);
+      const text = await response.text();
+      const lines = text.trim().split("\n").slice(1); // Ignorar cabecera
+      return lines.map(line => {
+        const parts = line.split(";");
+        return {
+          pregunta: parts[0],
+          opciones: parts.slice(1, 5),
+          correcta: parseInt(parts[5]) // Guardamos como número (1-4)
+        };
+      });
+    }
+
+    async function startQuiz() {
+      const select = document.getElementById("temaSeleccionado");
+      const valor = select.value;
+      let preguntas = [];
+
+      if (valor === "todos") {
+        const keys = Object.keys(temas);
+        for (let key of keys) {
+          const datos = await loadCSV(temas[key]);
+          preguntas.push(...shuffleArray(datos).slice(0, 3));
+        }
+        preguntas = shuffleArray(preguntas).slice(0, 20);
+      } else {
+        preguntas = await loadCSV(temas[valor]);
+        preguntas = shuffleArray(preguntas).slice(0, 20);
+      }
+
+      mostrarPreguntas(preguntas);
+    }
+
+    function mostrarPreguntas(preguntas) {
+      const contenedor = document.getElementById("quiz");
+      contenedor.innerHTML = "";
+      preguntas.forEach((pregunta, index) => {
+        const div = document.createElement("div");
+        div.className = "question-container";
+        const opcionesHTML = pregunta.opciones.map((op, i) =>
+          `<label><input type='radio' name='preg${index}' value='${i + 1}'> ${op}</label><br>`).join("");
+        div.innerHTML = `<strong>${index + 1}. ${pregunta.pregunta}</strong><br>${opcionesHTML}`;
+        contenedor.appendChild(div);
+      });
+      const boton = document.createElement("button");
+      boton.textContent = "Finalizar";
+      boton.onclick = () => mostrarResultados(preguntas);
+      contenedor.appendChild(boton);
+    }
+
+    function mostrarResultados(preguntas) {
+      const contenedor = document.getElementById("quiz");
+      const resultado = document.getElementById("result");
+      resultado.innerHTML = "<h2>Resumen</h2>";
+      let nota = 0;
+      let resumenCSV = "Pregunta;Respuesta del usuario;Respuesta correcta\n";
+
+      preguntas.forEach((pregunta, i) => {
+        const div = document.createElement("div");
+        div.className = "question-container";
+        const radios = document.getElementsByName(`preg${i}`);
+        let seleccionada = null;
+        for (let r of radios) if (r.checked) seleccionada = parseInt(r.value);
+
+        const correcta = pregunta.correcta;
+        const esCorrecta = seleccionada === correcta;
+        if (esCorrecta) nota += 0.5;
+
+        let opcionesHTML = "";
+        pregunta.opciones.forEach((opcion, idx) => {
+          let clase = "";
+          if (idx + 1 === correcta) clase = "correct";
+          if (idx + 1 === seleccionada && !esCorrecta && seleccionada !== correcta) clase = "incorrect";
+          opcionesHTML += `<div class='${clase}'>${idx + 1}. ${opcion}</div>`;
+        });
+
+        div.innerHTML = `<strong>${i + 1}. ${pregunta.pregunta}</strong><br>${opcionesHTML}`;
+        resultado.appendChild(div);
+
+        const rUsuario = seleccionada ? pregunta.opciones[seleccionada - 1] : "[Sin responder]";
+        const rCorrecta = pregunta.opciones[correcta - 1] || "[No encontrada]";
+        resumenCSV += `"${pregunta.pregunta}";"${rUsuario}";"${rCorrecta}"\n`;
+      });
+
+      const notaFinal = nota.toFixed(2);
+      resultado.innerHTML += `<h3>Nota final: ${notaFinal} / 10</h3>`;
+      resumenCSV += `Nota final:;${notaFinal};/10`;
+
+      // Descargar historial
+      const blob = new Blob([resumenCSV], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `historial_test_${Date.now()}.csv`;
+      a.click();
+    }
+
+    function shuffleArray(array) {
+      return [...array].sort(() => Math.random() - 0.5);
+    }
+  </script>
+</body>
+</html>
