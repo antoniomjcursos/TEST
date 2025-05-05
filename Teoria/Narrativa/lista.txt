@@ -1,4 +1,4 @@
-﻿Preguntas_de_los_7_temas.csv
+﻿kahoot.csv
 preguntas_narrativa.csv
 preguntas_tema_1.csv
 preguntas_tema_2.csv
@@ -7,10 +7,4 @@ preguntas_tema_4.csv
 preguntas_tema_5.csv
 preguntas_tema_6.csv
 preguntas_tema_7.csv
-tema1.csv
-tema2.csv
-tema3.csv
-tema4.csv
-tema5.csv
-tema6.csv
-tema7.csv
+
